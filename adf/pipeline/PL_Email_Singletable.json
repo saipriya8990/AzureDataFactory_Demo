@@ -104,7 +104,7 @@
 		"parameters": {
 			"Email_URL": {
 				"type": "string",
-				"defaultValue": "https://prod-16.southeastasia.logic.azure.com:443/workflows/7e647ba4cbc74b539e4e289af0ee3c0d/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=lxLs4UdFjHXHuKaJNpSr3Rc0LwEfrp1bDT7f8K8kVhQ"
+				"defaultValue": "https://<logic app URL>"
 			},
 			"table_name": {
 				"type": "string",
