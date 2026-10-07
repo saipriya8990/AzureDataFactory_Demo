@@ -1,0 +1,348 @@
+{
+	"name": "PL_Copy_Files",
+	"properties": {
+		"description": "Copy files from ADLS input folder to ADLS output folder.",
+		"activities": [
+			{
+				"name": "Get_List_of_all_Files",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "DS_Input_File_Path",
+						"type": "DatasetReference",
+						"parameters": {
+							"input_folder": {
+								"value": "@pipeline().parameters.input_folder",
+								"type": "Expression"
+							},
+							"input_file": {
+								"value": "@pipeline().parameters.input_filename",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"itemName",
+						"itemType",
+						"lastModified",
+						"childItems",
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			},
+			{
+				"name": "ForEach_Activity",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Wait_for_2seconds",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter_Files_Starting_With_C').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Get_childitem_inside_foreach",
+							"description": "Get filename",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "DS_Input_File_Path2",
+									"type": "DatasetReference",
+									"parameters": {
+										"input_folder": {
+											"value": "@pipeline().parameters.input_folder",
+											"type": "Expression"
+										},
+										"input_file": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"size",
+									"itemName"
+								],
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "BinaryReadSettings"
+								}
+							}
+						},
+						{
+							"name": "If_File_Size_Greaterthan_1byte",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "Get_childitem_inside_foreach",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@greater(activity('Get_childitem_inside_foreach').output.size,1)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "Copy_Files_in_ADLS",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "BinarySource",
+												"storeSettings": {
+													"type": "AzureBlobFSReadSettings",
+													"recursive": true,
+													"wildcardFolderPath": {
+														"value": "@pipeline().parameters.input_folder",
+														"type": "Expression"
+													},
+													"wildcardFileName": {
+														"value": "@activity('Get_childitem_inside_foreach').output.itemName",
+														"type": "Expression"
+													},
+													"deleteFilesAfterCompletion": false
+												},
+												"formatSettings": {
+													"type": "BinaryReadSettings"
+												}
+											},
+											"sink": {
+												"type": "BinarySink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												}
+											},
+											"enableStaging": false
+										},
+										"inputs": [
+											{
+												"referenceName": "DS_Input_File_Path",
+												"type": "DatasetReference",
+												"parameters": {
+													"input_folder": {
+														"value": "@pipeline().parameters.input_folder",
+														"type": "Expression"
+													},
+													"input_file": {
+														"value": "@activity('Get_childitem_inside_foreach').output.itemName",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "DS_Output_File_Path",
+												"type": "DatasetReference",
+												"parameters": {
+													"output_folder": {
+														"value": "@pipeline().parameters.output_folder",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									}
+								]
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Filter_Files_Starting_With_C",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Get_List_of_all_Files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get_List_of_all_Files').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@startswith(item().name,'c')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Wait_for_2seconds",
+				"description": "Just using this activity for practice purpose",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "Filter_Files_Starting_With_C",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 2
+				}
+			},
+			{
+				"name": "Filter_Files_Not_Starting_With_C",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Get_List_of_all_Files",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get_List_of_all_Files').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@not(startswith(item().name,'c'))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Foreach_Delete_Files_Notstarting_with_C",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Filter_Files_Not_Starting_With_C",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter_Files_Not_Starting_With_C').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Delete_files",
+							"type": "Delete",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "DS_Input_File_Path2",
+									"type": "DatasetReference",
+									"parameters": {
+										"input_folder": {
+											"value": "@pipeline().parameters.input_folder",
+											"type": "Expression"
+										},
+										"input_file": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								},
+								"logStorageSettings": {
+									"linkedServiceName": {
+										"referenceName": "LS_ADLS_Storage",
+										"type": "LinkedServiceReference"
+									},
+									"path": "logsfolder"
+								},
+								"enableLogging": true,
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"input_folder": {
+				"type": "string",
+				"defaultValue": "input"
+			},
+			"output_folder": {
+				"type": "string",
+				"defaultValue": "output"
+			},
+			"input_filename": {
+				"type": "string",
+				"defaultValue": "customers"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-10-06T21:12:50Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

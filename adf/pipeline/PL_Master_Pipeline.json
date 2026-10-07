@@ -1,0 +1,186 @@
+{
+	"name": "PL_Master_Pipeline",
+	"properties": {
+		"description": "Copies data from SQL database to ADLS",
+		"activities": [
+			{
+				"name": "Ingest_All_Tables",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get_List_Of_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get_List_Of_Tables').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "PL_Ingestion",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "PL_Ingestion",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"schema": "dbo",
+									"table_name": {
+										"value": "@item().table_name",
+										"type": "Expression"
+									},
+									"Email_URL": "https://prod-16.southeastasia.logic.azure.com:443/workflows/7e647ba4cbc74b539e4e289af0ee3c0d/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=lxLs4UdFjHXHuKaJNpSr3Rc0LwEfrp1bDT7f8K8kVhQ"
+								}
+							}
+						},
+						{
+							"name": "Send_Success_Status",
+							"type": "AppendVariable",
+							"dependsOn": [
+								{
+									"activity": "PL_Ingestion",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "Table_Status",
+								"value": {
+									"value": "@{item().table_name} - SUCCESS",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Send_Failure_Status",
+							"type": "AppendVariable",
+							"dependsOn": [
+								{
+									"activity": "PL_Ingestion",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "Table_Status",
+								"value": {
+									"value": "@{item().table_name} - FAILURE",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Get_List_Of_Tables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 1,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select table_name from metadata.table_list",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_SQL_Server",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "dbo",
+							"table_name": "customers"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "PL_Email_Multitable",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Ingest_All_Tables",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_Email_Multitable",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"email_recepient": {
+							"value": "@pipeline().globalParameters.Email_Recepient",
+							"type": "Expression"
+						},
+						"table_status": {
+							"value": "@variables('Table_Status')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Fail_pipeline_if_anyone_Activity_fails",
+				"description": "Fail activity gets triggered when any of the activities inside foreach loop fails.",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Ingest_All_Tables",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "The Pipeline has failed. Please check the failed activity.",
+					"errorCode": "500"
+				}
+			}
+		],
+		"variables": {
+			"Table_Status": {
+				"type": "Array"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-10-06T19:36:54Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

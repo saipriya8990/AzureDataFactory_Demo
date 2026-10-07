@@ -1,0 +1,28 @@
+{
+	"name": "DS_Output_File_Path",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLS_Storage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"output_folder": {
+				"type": "string",
+				"defaultValue": "output"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": {
+					"value": "@dataset().output_folder",
+					"type": "Expression"
+				},
+				"fileSystem": "adls-container"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,137 @@
+{
+	"name": "PL_Email_Singletable",
+	"properties": {
+		"activities": [
+			{
+				"name": "Send_Email",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Prepare_Email_details",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"url": {
+						"value": "@pipeline().parameters.Email_URL",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "@variables('Full_Email_Details')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Prepare_Email_details",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Set_Email_subject",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set_Email_Body",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "Full_Email_Details",
+					"value": {
+						"value": "{\"email_recepient\":\"@{pipeline().parameters.email_recepient}\",\n\"subject\":\"@{variables('Email_Subject')}\",\n\"body\":\"@{variables('Email_Body')}\"\n}\n\n",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Set_Email_subject",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "Email_Subject",
+					"value": {
+						"value": "@{pipeline().parameters.table_name} - @{pipeline().parameters.status}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Set_Email_Body",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "Email_Body",
+					"value": {
+						"value": "The table @{pipeline().parameters.table_name} has been ingested successfully",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"Email_URL": {
+				"type": "string",
+				"defaultValue": "https://prod-16.southeastasia.logic.azure.com:443/workflows/7e647ba4cbc74b539e4e289af0ee3c0d/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=lxLs4UdFjHXHuKaJNpSr3Rc0LwEfrp1bDT7f8K8kVhQ"
+			},
+			"table_name": {
+				"type": "string",
+				"defaultValue": "customers"
+			},
+			"status": {
+				"type": "string",
+				"defaultValue": "SUCCESS"
+			},
+			"email_recepient": {
+				"type": "string",
+				"defaultValue": "saipriya8990@gmail.com"
+			}
+		},
+		"variables": {
+			"Email_Subject": {
+				"type": "String"
+			},
+			"Email_Body": {
+				"type": "String"
+			},
+			"Full_Email_Details": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-10-06T04:28:25Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

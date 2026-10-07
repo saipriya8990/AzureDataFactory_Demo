@@ -1,0 +1,11 @@
+{
+	"name": "LS_ADLS_Storage",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://adlsstorage8990.dfs.core.windows.net/"
+		}
+	}
+}

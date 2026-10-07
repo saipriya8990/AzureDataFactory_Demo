@@ -1,0 +1,29 @@
+{
+	"name": "TGR_Event_Simple",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "PL_File_Event_Trigger_Demo",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"input_folder": "input",
+					"input_file": "@triggerBody().fileName",
+					"output_folder": "output"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/adls-container/blobs/input/",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/78468491-a3d2-4cc4-a683-e8df2a643257/resourceGroups/test/providers/Microsoft.Storage/storageAccounts/adlsstorage8990",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}

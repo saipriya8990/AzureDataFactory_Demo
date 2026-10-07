@@ -1,0 +1,36 @@
+{
+	"name": "DS_Input_File_Path2",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLS_Storage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"input_folder": {
+				"type": "string",
+				"defaultValue": "input"
+			},
+			"input_file": {
+				"type": "string",
+				"defaultValue": "customers"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().input_file",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().input_folder",
+					"type": "Expression"
+				},
+				"fileSystem": "adls-container"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

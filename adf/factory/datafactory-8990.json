@@ -1,0 +1,21 @@
+{
+	"name": "datafactory-8990",
+	"properties": {
+		"globalParameters": {
+			"Email_Recepient": {
+				"type": "string",
+				"value": "saipriya8990@gmail.com; thevacayguide@gmail.com"
+			}
+		},
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "3c0de4a9-3755-49df-a307-ba40c88f2edf",
+		"tenantId": "ba44904d-064e-4743-8cfc-459c4f7fe01a"
+	}
+}
